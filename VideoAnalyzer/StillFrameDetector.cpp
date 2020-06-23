@@ -1,25 +1,40 @@
 #include "StillFrameDetector.h"
 
-
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+
 using namespace std;
 using namespace cv;
 
-void StillFrameDetector::SplitMat(const cv::Mat& img, const int divisor, std::vector<cv::Mat>& blocks)
+void StillFrameDetector::SplitMat(const Mat& img, const int divisor, vector<Mat>& blocks)
 {
-    // Checking if the image was passed correctly
-    if (!img.data || img.empty())
-        throw exception("StillFrameDetector received wrong input image");
     const auto colWidth = img.cols / divisor;
     const auto rowHeight = img.rows / divisor;
-    for (int y = 0; y < img.cols; y += colWidth)
-    {
-        for (int x = 0; x < img.rows; x += rowHeight)
-        {
-            blocks.push_back(img(cv::Rect(y, x, divisor, rowHeight)));
+
+    for (int y = 0; y < img.rows; y += rowHeight) {
+        for (int x = 0; x < img.cols; x += colWidth) {
+            blocks.push_back(img(Rect(
+                x, 
+                y, 
+                x + colWidth > img.cols ? img.cols - x : colWidth, 
+                y + rowHeight > img.rows ? img.rows - y : rowHeight)));
         }
+    }
+}
+
+void StillFrameDetector::GetHistagramsOfMat(const cv::Mat& chunk, std::vector<cv::Mat>& histagrams)
+{
+    vector<Mat> bgrPlanes;
+    split(chunk, bgrPlanes);
+    int histSize = 256;
+    float range[] = { 0, 256 }; //the upper boundary is exclusive
+    const float* histRange = { range };
+    bool uniform = true, accumulate = false;
+    for (size_t i = 0; i < bgrPlanes.size(); i++) {
+        Mat hist;
+        calcHist(&bgrPlanes[i], 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
+        histagrams.push_back(hist);
     }
 }
 
@@ -28,36 +43,45 @@ StillFrameDetector::~StillFrameDetector()
 }
 
 
-void StillFrameDetector::Detect(const cv::Mat& inp, cv::Mat& out)
+void StillFrameDetector::Detect(const Mat& inp, Mat& out)
 {
-    vector<Mat> bgr_planes;
-    cv::split(inp, bgr_planes);
-    int histSize = 256;
-    float range[] = { 0, 256 }; //the upper boundary is exclusive
-    const float* histRange = { range };
-    bool uniform = true, accumulate = false;
-    Mat b_hist, g_hist, r_hist;
-    calcHist(&bgr_planes[0], 1, 0, Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
-    calcHist(&bgr_planes[1], 1, 0, Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate);
-    calcHist(&bgr_planes[2], 1, 0, Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate);
-    int hist_w = 512, hist_h = 400;
-    int bin_w = cvRound((double)hist_w / histSize);
-    Mat histImage(hist_h, hist_w, CV_8UC3, Scalar(0, 0, 0));
-    normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-    normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-    normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
-    for (int i = 1; i < histSize; i++)
-    {
-        auto xddd = g_hist.at<float>(i - 1);
-        line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
-            Point(bin_w * (i), hist_h - cvRound(b_hist.at<float>(i))),
-            Scalar(255, 0, 0), 2, 8, 0);
-        line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
-            Point(bin_w * (i), hist_h - cvRound(g_hist.at<float>(i))),
-            Scalar(0, 255, 0), 2, 8, 0);
-        line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
-            Point(bin_w * (i), hist_h - cvRound(r_hist.at<float>(i))),
-            Scalar(0, 0, 255), 2, 8, 0);
+    // Checking if the image was passed correctly
+    if (!inp.data || inp.empty())
+        throw exception("StillFrameDetector received wrong input image");
+    vector<vector<Mat>> currentHistograms;
+    vector<Mat> matChunks;
+    SplitMat(inp, imgDivisor, matChunks);
+    for (const Mat& chunk : matChunks) {
+        vector<Mat> histagrams;
+        GetHistagramsOfMat(chunk, histagrams);
+        currentHistograms.emplace_back(histagrams);
     }
-    out = histImage;
+
+    double similarityRate = 100;
+    if (!lastHistograms.empty()) {
+        //Compare current with last
+        if (lastHistograms.size() == currentHistograms.size() && 
+            lastHistograms.size() > 0 && 
+            lastDepth == inp.channels()) {
+            size_t differentHistagrams = 0;
+            for (size_t i = 0; i < currentHistograms.size(); i++) {
+                for (size_t j = 0; j < currentHistograms[i].size(); j++) {
+                    if (countNonZero(currentHistograms[i][j] != lastHistograms[i][j]) != 0) {
+                        differentHistagrams++;
+                    }
+
+                }
+            }
+
+            similarityRate -= ((double)differentHistagrams / (currentHistograms.size() * currentHistograms[0].size())) * 100;
+        }
+        else {
+            // Different size of frames or depth
+            similarityRate = 0;
+        }
+    }
+    lastHistograms = currentHistograms;
+    lastDepth = inp.channels();
+
+    out = inp;
 }
