@@ -4,6 +4,8 @@
 #include <iostream>
 
 #include "StillFrameDetector.h"
+#include "BlackBarsFrameDetector.h"
+
 using namespace std;
 using namespace cv;
 int main(int argc, char** argv)
@@ -14,15 +16,18 @@ int main(int argc, char** argv)
     Mat src3 = imread(samples::findFile("emptyLana.jpg"), IMREAD_COLOR);
     Mat out;
     StillFrameDetector sfd;
+	BlackBarsFrameDetector bbfd;
+
 	if (src.empty())
     {
         return EXIT_FAILURE;
     }
-    sfd.Detect(src, out);
-    sfd.Detect(src2, out);
+   // sfd.Detect(src, out);
+	bbfd.Detect(src, out);
     sfd.Detect(src3, out);
     imshow("Source image", src);
-    imshow("calcHist Demo", out);
-    waitKey();
+   // imshow("calcHist Demo", out);
+    imshow("detectedBorders", out);
+	waitKey();
     return EXIT_SUCCESS;
 }
