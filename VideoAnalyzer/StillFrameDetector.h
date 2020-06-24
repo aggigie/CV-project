@@ -6,10 +6,10 @@ class StillFrameDetector :
 	public FrameDetector
 {
 private:
-	const size_t imgDivisor = 50;
+	const size_t imgDivisor = 20;
 	int lastDepth = 0;
 	std::vector<std::vector<cv::Mat>> lastHistograms;
-	double threshold = 95.0;
+	double threshold = 99.0;
 	double similarityRate = 100;
 	static void SplitMat(const cv::Mat& img, const int divisor, std::vector<cv::Mat>& blocks);
 	static void GetHistagramsOfMat(const cv::Mat& chunk, std::vector<cv::Mat>& histagrams);
