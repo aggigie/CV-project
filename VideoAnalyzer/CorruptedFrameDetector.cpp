@@ -1,16 +1,11 @@
 #include "CorruptedFrameDetector.h"
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include "opencv2/imgcodecs.hpp"
+
 #include <iostream>
 using namespace cv;
 
 using namespace std;
-CorruptedFrameDetector::~CorruptedFrameDetector()
-{
-}
-Mat removeLight(Mat img, Mat pattern)
+
+Mat CorruptedFrameDetector::RemoveLight(Mat img, Mat pattern)
 {
 	Mat aux;
 	// Require change our image to 32 float for division
@@ -26,7 +21,7 @@ Mat removeLight(Mat img, Mat pattern)
 	return aux;
 }
 
-Mat calculateLightPattern(Mat img)
+Mat CorruptedFrameDetector::CalculateLightPattern(Mat img)
 {
 	Mat pattern;
 	// Basic and effective way to calculate the light pattern from one image
@@ -34,48 +29,34 @@ Mat calculateLightPattern(Mat img)
 	return pattern;
 }
 
-void ConnectedComponentsStats(Mat img)
+bool CorruptedFrameDetector::ConnectedComponentsStats(Mat img1)
 {
 	// Use connected components with stats
-	Mat labels(img.rows, img.cols, img.type());
-	int num_objects = connectedComponents(img, labels);
-	// Check the number of objects detected
-	if (num_objects < 2) {
-		std::cout << "No objects detected" << std::endl;
-		return;
-	}
-	else {
-		std::cout << "Number of objects detected: " << num_objects - 1 << std::endl;
-	}
+	Mat labels(img1.rows, img1.cols, img1.type());
+
+	int noObjects = connectedComponents(img1, labels);
+
+	return noObjects >= 2;
 }
 
-void CorruptedFrameDetector::Detect(const cv::Mat& inp, cv::Mat& out)
+void CorruptedFrameDetector::Detect(const cv::Mat& img, cv::Mat& out)
 {
-	Mat wOutLight = imread(samples::findFile("old.jpg"), IMREAD_COLOR);
-	Mat noiseRemoved, lightRemoved, binary, finalMat;
-	// Noise removal
-	medianBlur(inp, noiseRemoved, 3);
-	//out = noiseRemoved;
-	// Lighting removal
-	lightRemoved = removeLight(noiseRemoved, calculateLightPattern(noiseRemoved));
-//	out = lightRemoved;
-	// Binarization
-	threshold(lightRemoved, binary, 140, 255, THRESH_BINARY_INV);
-	//out = noiseRemoved;
-	// The connected component extraction (labeling)
-	//int noFinalObjects = connectedComponents(binary, binary);
-	//int noObjects = connectedComponents(inp, labels);
-//	if (noObjects > noFinalObjects)
-//	{
-//		out = binary;
-//	}
-//	else out = inp;
-	binary.convertTo(finalMat, CV_8U);
-	ConnectedComponentsStats(finalMat);
+	Mat imgNoise, imgBoxSmooth, gray;
+	cvtColor(img, gray, COLOR_BGR2GRAY);
+	medianBlur(gray, imgNoise, 3);
+	blur(gray, imgBoxSmooth, Size(3, 3));
+	Mat lightPattern = CalculateLightPattern(imgNoise);
+	medianBlur(lightPattern, lightPattern, 3);
+	Mat imgNoLight;
+	imgNoise.copyTo(imgNoLight);
+	Mat imgThr;
+	threshold(imgNoLight, imgThr, 140, 255, THRESH_BINARY_INV);
+	detectedNoise = ConnectedComponentsStats(imgThr);
+	out = imgThr;
 }
 
 
 string CorruptedFrameDetector::ToString()
 {
-	return string();
+	return detectedNoise ? "Detected noise" : "Clear";
 }
