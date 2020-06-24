@@ -62,12 +62,10 @@ void VideoAnalyzer::Update()
         {
             break;
         }
-        // Fill the frame with a nice color
+
         if (HandleButtonPress()) {
             break;
         }
-
-        //Mat src2 = imread(samples::findFile("lena2.bmp"), IMREAD_COLOR);
 
         Mat out;
         currentFrameDetector->Detect(src, out);

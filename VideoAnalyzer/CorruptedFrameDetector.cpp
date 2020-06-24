@@ -8,6 +8,7 @@ using namespace std;
 Mat CorruptedFrameDetector::RemoveLight(Mat img, Mat pattern)
 {
 	Mat aux;
+	// Remove light from background and normalize
 	Mat img32, pattern32;
 	img.convertTo(img32, CV_32F);
 	pattern.convertTo(pattern32, CV_32F);

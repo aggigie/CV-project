@@ -18,9 +18,6 @@
     <ClCompile Include="VideoAnalyzer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FrameDetector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="StillFrameDetector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

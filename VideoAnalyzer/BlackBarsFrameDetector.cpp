@@ -15,7 +15,7 @@ void BlackBarsFrameDetector::Detect(const cv::Mat & inp, cv::Mat & out)
 	int largestContourIndex;
 	double largestArea = 0;
 	cvtColor(inp, gray, COLOR_BGR2GRAY);
-	threshold(gray, thresh, 20, 2555, THRESH_BINARY);
+	threshold(gray, thresh, 20, 255, THRESH_BINARY);
 	findContours(thresh, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 	for (int i = 0; i < contours.size(); i++) 	{
 		double a = contourArea(contours[i], false);  
