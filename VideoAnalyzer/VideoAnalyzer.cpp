@@ -1,14 +1,16 @@
 #define CVUI_IMPLEMENTATION
 #include <opencv2/highgui.hpp>
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgproc.hpp"
-#include "cvui.h"
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
 #include <iostream>
 #include <memory>
+#include <exception>
 
 #include "StillFrameDetector.h"
 #include "BlackBarsFrameDetector.h"
 #include "CorruptedFrameDetector.h"
+#include "cvui.h"
 using namespace std;
 using namespace cv;
 class VideoAnalyzer
@@ -27,6 +29,9 @@ private:
 
 VideoAnalyzer::VideoAnalyzer(string videoPath) : currentFrameDetector(make_unique<StillFrameDetector>()), video(videoPath), controls(200, 500, CV_8UC3)
 {
+    if (!video.isOpened()) {
+        throw exception((string("Unable to open given video") + videoPath).c_str());
+    }
 }
 
 VideoAnalyzer::~VideoAnalyzer()
@@ -41,21 +46,26 @@ void VideoAnalyzer::Start()
 
 void VideoAnalyzer::Update()
 {
+    Mat src;
     while (true) {
-        // Fill the frame with a nice color
         controls = cv::Scalar(49, 52, 49);
         
-        if (cvui::button(controls, 360, 80, "Button")) {
-            std::cout << "Regular button clicked!" << std::endl;
+        video >> src;
+        if (src.empty())
+        {
+            break;
         }
+        // Fill the frame with a nice color
         if (HandleButtonPress()) {
             break;
         }
-        Mat src2 = imread(samples::findFile("lena2.bmp"), IMREAD_COLOR);
-        Mat out;
-        currentFrameDetector->Detect(src2, out);
 
-        cvui::text(controls, 110, 80, currentFrameDetector->ToString());
+        //Mat src2 = imread(samples::findFile("lena2.bmp"), IMREAD_COLOR);
+
+        Mat out;
+        currentFrameDetector->Detect(src, out);
+
+        cvui::text(controls, 300, 90, currentFrameDetector->ToString());
 
         cvui::imshow("VideoAnalyzer", controls);
         imshow("Preview", out);
@@ -68,42 +78,75 @@ void VideoAnalyzer::Update()
 
 bool VideoAnalyzer::HandleButtonPress()
 {
-    if (cvui::button(controls, 360, 60, "Black Bars detection")) {
+    if (cvui::button(controls, 40, 20, "Black Bars detection")) {
         currentFrameDetector = make_unique<BlackBarsFrameDetector>();
     }
-    if (cvui::button(controls, 360, 80, "Still frames detection")) {
+    if (cvui::button(controls, 40, 80, "Still frames detection")) {
         currentFrameDetector = make_unique<StillFrameDetector>();
     }
-    if (cvui::button(controls, 360, 100, "Corrupted frame detection")) {
+    if (cvui::button(controls, 40, 140, "Corrupted frame detection")) {
         currentFrameDetector = make_unique<CorruptedFrameDetector>();
     }
-    return cvui::button(controls, 360, 80, "Exit");
+    return cvui::button(controls, 40, 200, "Exit");
 }
 
 
 int main(int argc, char** argv)
 {
-    CommandLineParser parser(argc, argv, "{@input | lena.bmp | input video}");
-    VideoAnalyzer analyzer(samples::findFile(parser.get<String>("@input")));
-    analyzer.Start();
-    Mat src = imread(samples::findFile(parser.get<String>("@input")), IMREAD_COLOR);
+    VideoWriter videoWriter;
+    videoWriter.open("TestVideo.mp4", cv::VideoWriter::fourcc('D','I','V','3'), 30.0,
+        Size(640, 480));
 
-    // Init cvui and tell it to create a OpenCV window, i.e. cv::namedWindow(WINDOW_NAME).
-
-    
-    Mat src2 = imread(samples::findFile("lena2.bmp"), IMREAD_COLOR);
-    Mat src3 = imread(samples::findFile("emptyLana.jpg"), IMREAD_COLOR);
-    Mat out;
-    StillFrameDetector sfd;
-	if (src.empty())
+    if (!videoWriter.isOpened())
     {
-        return EXIT_FAILURE;
+        throw runtime_error("Unable to open videoWriter");
     }
-    sfd.Detect(src, out);
-    sfd.Detect(src2, out);
-    sfd.Detect(src3, out);
-    imshow("Source image", src);
-    imshow("calcHist Demo", out);
-    waitKey();
+    Mat src2 = imread(samples::findFile("lena2.bmp"), IMREAD_COLOR);
+    Mat src3 = imread(samples::findFile("color.jpg"), IMREAD_COLOR);
+    Mat src4 = imread(samples::findFile("color2.jpg"), IMREAD_COLOR);
+
+    for (size_t i = 0; i < 300; i++)
+    {
+        videoWriter.write(src2);
+    }
+
+    for (size_t i = 0; i < 300; i++)
+    {
+        auto cloned = src2.clone();
+        putText(cloned, "TEST", Point(rand() % cloned.cols, rand() % cloned.rows), 1, 1, Scalar(0, 0, 0));
+        videoWriter.write(cloned);
+    }
+    int poinSize = 2;
+    for (size_t i = 0; i < 600; i++)
+    {
+        auto cloned = src2.clone();
+        putText(cloned, "Points TEST", Point(100,100), 1, 1, Scalar(0, 0, 0));
+        circle(cloned, Point(rand() % cloned.cols, rand() % cloned.rows), poinSize, Scalar(255, 255, 0), FILLED);
+        if (i % 30 == 0) {
+            poinSize++;
+        }
+        videoWriter.write(cloned);
+    }
+    for (size_t i = 0; i < 150; i++)
+    {
+        videoWriter.write(src2);
+    }
+    for (size_t i = 0; i < 300; i++)
+    {
+        videoWriter.write(src3);
+    }
+    for (size_t i = 0; i < 150; i++)
+    {
+        videoWriter.write(src2);
+    }
+    for (size_t i = 0; i < 300; i++)
+    {
+        videoWriter.write(src4);
+    }
+
+    videoWriter.release();
+    /*CommandLineParser parser(argc, argv, "{@input | lena.bmp | input video}");
+    VideoAnalyzer analyzer(samples::findFile(parser.get<String>("@input")));
+    analyzer.Start();*/
     return EXIT_SUCCESS;
 }
