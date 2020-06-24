@@ -27,7 +27,7 @@ private:
     Mat controls;
 };
 
-VideoAnalyzer::VideoAnalyzer(string videoPath) : currentFrameDetector(make_unique<StillFrameDetector>()), video(videoPath), controls(200, 500, CV_8UC3)
+VideoAnalyzer::VideoAnalyzer(string videoPath) : currentFrameDetector(make_unique<BlackBarsFrameDetector>()), video(videoPath), controls(200, 500, CV_8UC3)
 {
     if (!video.isOpened()) {
         throw exception((string("Unable to open given video") + videoPath).c_str());
@@ -36,6 +36,10 @@ VideoAnalyzer::VideoAnalyzer(string videoPath) : currentFrameDetector(make_uniqu
 
 VideoAnalyzer::~VideoAnalyzer()
 {
+    video.release();
+    controls.release();
+    currentFrameDetector.release();
+    destroyAllWindows();
 }
 
 void VideoAnalyzer::Start()

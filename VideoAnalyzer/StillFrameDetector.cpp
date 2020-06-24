@@ -67,7 +67,9 @@ void StillFrameDetector::Detect(const Mat& inp, Mat& out)
             size_t differentHistagrams = 0;
             for (size_t i = 0; i < currentHistograms.size(); i++) {
                 for (size_t j = 0; j < currentHistograms[i].size(); j++) {
-                    if (countNonZero(currentHistograms[i][j] != lastHistograms[i][j]) != 0) {
+                    Mat absHistogram;
+                    absdiff(currentHistograms[i][j], lastHistograms[i][j], absHistogram);
+                    if (sum(absHistogram)[0] > 50) {
                         differentHistagrams++;
                     }
 

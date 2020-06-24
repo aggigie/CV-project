@@ -25,7 +25,7 @@ void BlackBarsFrameDetector::Detect(const cv::Mat & inp, cv::Mat & out)
 			boundRect = boundingRect(contours[i]);
 		}
 	}
-	cv::Rect currentMatRect = cv::Rect(cv::Point(0, 0), inp.size());
+	currentMatRect = cv::Rect(cv::Point(0, 0), inp.size());
 	if (currentMatRect.area() > boundRect.area()) {
 		out = inp(boundRect);
 	}
