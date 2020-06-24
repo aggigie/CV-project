@@ -27,7 +27,10 @@ private:
     Mat controls;
 };
 
-VideoAnalyzer::VideoAnalyzer(string videoPath) : currentFrameDetector(make_unique<BlackBarsFrameDetector>()), video(videoPath), controls(200, 500, CV_8UC3)
+VideoAnalyzer::VideoAnalyzer(string videoPath) 
+	: currentFrameDetector(make_unique<StillFrameDetector>()), 
+	  video(videoPath), 
+	  controls(300, 500, CV_8UC3)
 {
     if (!video.isOpened()) {
         throw exception((string("Unable to open given video") + videoPath).c_str());
@@ -97,7 +100,7 @@ bool VideoAnalyzer::HandleButtonPress()
 
 int main(int argc, char** argv)
 {
-    CommandLineParser parser(argc, argv, "{@input | TestVideo.mp4 | input video}");
+    CommandLineParser parser(argc, argv, "{@input | Old Flim Grain.wmv | input video}");
     VideoAnalyzer analyzer(samples::findFile(parser.get<String>("@input")));
     analyzer.Start();
     return EXIT_SUCCESS;

@@ -12,7 +12,7 @@ class CorruptedFrameDetector :
 public:
 	Mat RemoveLight(Mat img, Mat pattern);
 	Mat CalculateLightPattern(Mat img);
-	bool ConnectedComponentsStats(Mat thresImg);
+	bool ConnectedComponentsStats(Mat thresImg, Mat img2);
 	void Detect(const cv::Mat& inp, cv::Mat& out) override;
 	std::string ToString() override;
 };
