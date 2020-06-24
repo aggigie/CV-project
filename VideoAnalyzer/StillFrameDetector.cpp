@@ -57,8 +57,9 @@ void StillFrameDetector::Detect(const Mat& inp, Mat& out)
         currentHistograms.emplace_back(histagrams);
     }
 
-    double similarityRate = 100;
+    
     if (!lastHistograms.empty()) {
+        similarityRate = 100;
         //Compare current with last
         if (lastHistograms.size() == currentHistograms.size() && 
             lastHistograms.size() > 0 && 
@@ -79,9 +80,15 @@ void StillFrameDetector::Detect(const Mat& inp, Mat& out)
             // Different size of frames or depth
             similarityRate = 0;
         }
+
     }
     lastHistograms = currentHistograms;
     lastDepth = inp.channels();
 
     out = inp;
+}
+
+string StillFrameDetector::ToString()
+{
+    return similarityRate > threshold ? "Still frame" : "Different frame";
 }
