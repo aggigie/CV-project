@@ -1,9 +1,8 @@
 #include "BlackBarsFrameDetector.h"
-#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
 using namespace cv;
-
+using namespace std;
 BlackBarsFrameDetector::~BlackBarsFrameDetector()
 {
 }
@@ -11,9 +10,8 @@ BlackBarsFrameDetector::~BlackBarsFrameDetector()
 void BlackBarsFrameDetector::Detect(const cv::Mat & inp, cv::Mat & out)
 {
 	Mat gray, thresh;
-	std::vector<std::vector<Point>> contours;
-	std::vector<Vec4i> hierarchy;
-	Rect boundRect;
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
 	int largestContourIndex;
 	double largestArea = 0;
 	cvtColor(inp, gray, COLOR_BGR2GRAY);
@@ -27,9 +25,14 @@ void BlackBarsFrameDetector::Detect(const cv::Mat & inp, cv::Mat & out)
 			boundRect = boundingRect(contours[i]);
 		}
 	}
-	cv::Rect rectOrginal = cv::Rect(cv::Point(0, 0), inp.size());
-	if (rectOrginal.area() > boundRect.area()) {
+	cv::Rect currentMatRect = cv::Rect(cv::Point(0, 0), inp.size());
+	if (currentMatRect.area() > boundRect.area()) {
 		out = inp(boundRect);
 	}
 	else out = gray;
+}
+
+string BlackBarsFrameDetector::ToString()
+{
+	return currentMatRect.area() > boundRect.area() ? "Found black bars" : "Black bars not found";
 }

@@ -6,10 +6,10 @@
 #include <iostream>
 using namespace cv;
 
+using namespace std;
 CorruptedFrameDetector::~CorruptedFrameDetector()
 {
 }
-
 Mat removeLight(Mat img, Mat pattern)
 {
 	Mat aux;
@@ -49,7 +49,7 @@ void ConnectedComponentsStats(Mat img)
 	}
 }
 
-void CorruptedFrameDetector::Detect(const cv::Mat & inp, cv::Mat & out)
+void CorruptedFrameDetector::Detect(const cv::Mat& inp, cv::Mat& out)
 {
 	Mat wOutLight = imread(samples::findFile("old.jpg"), IMREAD_COLOR);
 	Mat noiseRemoved, lightRemoved, binary, finalMat;
@@ -72,4 +72,10 @@ void CorruptedFrameDetector::Detect(const cv::Mat & inp, cv::Mat & out)
 //	else out = inp;
 	binary.convertTo(finalMat, CV_8U);
 	ConnectedComponentsStats(finalMat);
+}
+
+
+string CorruptedFrameDetector::ToString()
+{
+	return string();
 }
